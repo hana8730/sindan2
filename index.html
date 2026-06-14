@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>日本人カップル 相性タイプ診断</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #c2185b;
+            --primary-hover: #a0104a;
+            --bg-light: #fff0f5;
+            --text-dark: #333333;
+            --text-muted: #666666;
+            --bg-white: #FFFFFF;
+            --shadow-md: 0 10px 30px rgba(194, 24, 91, 0.07);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { background: #fcfcfc; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; color: var(--text-dark); }
+        .app-container { background: var(--bg-white); width: 100%; max-width: 480px; min-height: 100vh; padding: 30px 20px; display: flex; flex-direction: column; box-shadow: var(--shadow-md); }
+        .view-section { display: none; opacity: 0; transform: scale(0.98); transition: var(--transition); width: 100%; }
+        .view-section.active { display: flex; flex-direction: column; opacity: 1; transform: scale(1); }
+        .text-center { text-align: center; }
+        .badge { display: inline-block; background: var(--bg-light); color: var(--primary); padding: 6px 14px; border-radius: 50px; font-size: 0.8rem; font-weight: bold; margin: 0 auto 20px; align-self: center; }
+        h1 { font-size: 1.45rem; line-height: 1.4; margin-bottom: 20px; font-weight: 700; }
+        h1 span { font-size: 0.95rem; display: block; color: var(--primary); margin-bottom: 6px; }
+        .form-group { text-align: left; margin-bottom: 20px; width: 100%; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); margin-bottom: 8px; padding-left: 4px; }
+        .input-field { width: 100%; padding: 16px; border: 2px solid #eee; border-radius: 14px; font-size: 1rem; color: var(--text-dark); background: #fafafa; transition: var(--transition); user-select: text; }
+        .input-field:focus { outline: none; border-color: var(--primary); background: #fff; }
+        .error-message { color: #ff3366; font-size: 0.8rem; margin-top: 6px; display: none; text-align: left; padding-left: 4px; }
+        .btn { display: block; width: 100%; padding: 16px; background: var(--primary); color: #fff; border: none; border-radius: 16px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: var(--transition); text-align: center; text-decoration: none; margin-top: 10px; }
+        .btn:active { transform: scale(0.97); background: var(--primary-hover); }
+        .progress-container { width: 100%; height: 5px; background: #f0f0f0; border-radius: 10px; margin-bottom: 25px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.2s ease; }
+        .question-number { font-size: 0.85rem; color: var(--primary); font-weight: bold; margin-bottom: 12px; }
+        .question-text { font-size: 1.15rem; font-weight: bold; line-height: 1.5; margin-bottom: 30px; }
+        .options-list { display: flex; flex-direction: column; gap: 12px; }
+        .option-btn { background: var(--bg-white); border: 2px solid #f0f0f0; border-radius: 14px; padding: 16px; text-align: left; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: var(--transition); line-height: 1.4; }
+        .option-btn:active { border-color: var(--primary); background: var(--bg-light); }
+
+        /* 結果: バーチャート */
+        .result-type-label { font-size: 1.5rem; font-weight: bold; color: var(--primary); margin: 10px 0 6px; }
+        .result-type-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; }
+        .bars-container { width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .bar-row { display: flex; align-items: center; gap: 10px; }
+        .bar-name { width: 110px; font-size: 0.82rem; font-weight: bold; color: var(--text-dark); text-align: right; flex-shrink: 0; }
+        .bar-track { flex: 1; background: #f0f0f0; border-radius: 10px; height: 16px; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.8s ease; width: 0%; }
+        .bar-fill.secondary { background: #f8bbd0; }
+        .bar-pct { width: 36px; font-size: 0.8rem; font-weight: bold; color: var(--primary); flex-shrink: 0; }
+
+        .result-description { font-size: 0.9rem; color: var(--text-dark); line-height: 1.6; background: #fff; padding: 20px; border-radius: 14px; margin-bottom: 20px; text-align: left; border: 1px solid #f0f0f0; }
+        .advice-title { font-weight: bold; color: var(--primary); margin-bottom: 6px; font-size: 0.95rem; }
+        .cta-container { background: var(--bg-light); border-radius: 16px; padding: 22px 16px; margin-bottom: 20px; border: 1px solid #f8bbd0; }
+        .cta-title { font-size: 1rem; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
+        .cta-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <!-- スタート画面 -->
+    <section id="start-view" class="view-section active text-center">
+        <span class="badge">海外20年・国際結婚17年が監修</span>
+        <h1><span>あなたと相手の"すれ違い"が分かる</span>日本人カップル<br>相性タイプ診断</h1>
+        <p style="font-size:0.88rem; color:var(--text-muted); line-height:1.6; margin-bottom:24px; text-align:left;">
+            「条件は合ってるのに、なぜか上手くいかない」<br>
+            そのすれ違いの正体は、コミュニケーションの<br>
+            "タイプのズレ"にあることが多いんです。<br><br>
+            7問で、あなたの相性タイプが分かります。
+        </p>
+        <div class="form-group">
+            <label for="user-name">お名前（ニックネーム可）</label>
+            <input type="text" id="user-name" class="input-field" placeholder="例：まゆ、たかし" maxlength="15">
+            <div class="error-message" id="name-error">お名前を入力してください</div>
+        </div>
+        <div class="form-group" style="margin-bottom:30px;">
+            <label for="user-age">ご年齢</label>
+            <input type="number" id="user-age" class="input-field" placeholder="例：30" min="18" max="99" pattern="\d*">
+            <div class="error-message" id="age-error">正しい年齢を入力してください（18〜99歳）</div>
+        </div>
+        <button class="btn" id="start-btn">診断を始める（7問）</button>
+    </section>
+
+    <!-- 診断中画面 -->
+    <section id="question-view" class="view-section">
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+        <div class="question-number" id="question-number">質問 1 / 7</div>
+        <div class="question-text" id="question-text"></div>
+        <div class="options-list" id="options-container"></div>
+    </section>
+
+    <!-- 結果画面 -->
+    <section id="result-view" class="view-section text-center">
+        <span class="badge">IBJ正規代理店 mariage.Isis の診断結果</span>
+        <div id="user-profile-badge" style="font-size:0.9rem;font-weight:bold;color:var(--text-muted);margin-bottom:5px;"></div>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:4px;">あなたの相性タイプは</p>
+        <div class="result-type-label" id="result-type-label"></div>
+        <div class="result-type-sub" id="result-type-sub"></div>
+
+        <div class="bars-container" id="bars-container"></div>
+
+        <div class="result-description">
+            <div class="advice-title">💡 あなたの相性パターン</div>
+            <p id="result-text" style="margin-bottom:15px;font-size:0.85rem;color:var(--text-muted);"></p>
+            <div class="advice-title">💑 相性の良い相手の傾向</div>
+            <p id="result-partner" style="margin-bottom:15px;font-size:0.85rem;color:var(--text-muted);"></p>
+            <div class="advice-title">🎯 すれ違いを防ぐために</div>
+            <p id="result-advice" style="font-size:0.85rem;color:var(--text-muted);"></p>
+        </div>
+
+        <div class="cta-container">
+            <h3 class="cta-title">日本人の相性のことは、お任せください</h3>
+            <p class="cta-desc">
+                海外20年・国際結婚17年の経験と<br>
+                四柱推命による気質診断の掛け合わせで<br>
+                相性の見極めが的確だから<br><br>
+                半年でのご成婚も目指せます。<br><br>
+                LINEにてお友達追加後<br>
+                「<strong>相性</strong>」と漢字2文字を送信してください💌<br>
+                相性アドバイス動画をプレゼント🎁
+            </p>
+            <a href="https://lin.ee/qYCi0W9" target="_blank" class="btn">LINEに登録する</a>
+        </div>
+        <button class="btn" id="restart-btn" style="background:#f0f0f0;color:var(--text-muted);margin-top:10px;">もう一度診断する</button>
+    </section>
+
+</div>
+<script>
+const TYPES = {
+    kotoba: { label: '言葉リード型', sub: '言葉で伝え、自分から動くタイプ' },
+    kuki:   { label: '空気サポート型', sub: '言葉より行動・雰囲気で寄り添うタイプ' },
+    chowa:  { label: '調和共鳴型', sub: '相手と一緒に決めて、共鳴を大切にするタイプ' },
+    timing: { label: 'タイミング待ち型', sub: '機が熟すまでじっくり待ち、深く繋がるタイプ' },
+};
+
+const RESULTS = {
+    kotoba: {
+        text: '言葉で気持ちをきちんと伝え、自分から積極的に動くことが得意なタイプ。「察してほしい」より「ちゃんと話したい」という気持ちが強く、コミュニケーションをオープンに保ちます。',
+        partner: '同じく言葉でやり取りできる「言葉リード型」や、聞き上手で受け止めてくれる「調和共鳴型」と相性が良い傾向があります。',
+        advice: '空気サポート型やタイミング待ち型の方と組む場合は、「ちょっと直接すぎるかな」と感じたら、一歩引いて相手のペースに合わせてあげると、より深い信頼関係が生まれます。',
+    },
+    kuki: {
+        text: '言葉より行動や雰囲気で愛情を伝えるタイプ。「言わなくても分かってほしい」という感覚を大切にし、相手の気持ちを読み取る感受性が高いです。',
+        partner: '感受性が豊かな「タイミング待ち型」や、空気を読むことを大切にする同じ「空気サポート型」と自然に分かり合えます。',
+        advice: '「言葉リード型」の方と組む場合、相手は言葉ではっきり確認したいタイプ。「好き」「ありがとう」を意識的に声に出すだけで、相手の安心感がぐっと増します。',
+    },
+    chowa: {
+        text: '相手と一緒に物事を決め、共鳴を大切にするタイプ。「どうしたい？」と聞きながら関係を育てるので、どんな相手とも比較的合わせやすい柔軟性があります。',
+        partner: 'ほぼすべてのタイプと相性良く動けますが、特に「言葉リード型」のリード力と組み合わさると、バランスの良い関係が生まれやすいです。',
+        advice: '自分の希望や意見を遠慮しすぎず、「私はこうしたい」と伝える練習をすると、相手との対等感が増して関係がより深まります。',
+    },
+    timing: {
+        text: '機が熟すまでじっくりと待ち、タイミングを見て深く繋がるタイプ。慎重に見えますが、一度心を開いた相手には誠実で深い絆を築きます。',
+        partner: '同じペースで関係を育てる「空気サポート型」や、「調和共鳴型」のように合わせてくれる相手と安心して関係を深められます。',
+        advice: '「言葉リード型」の方とは最初ペースが合わない場合がありますが、「今は少し考え中」と一言伝えるだけで相手の安心感が生まれます。',
+    },
+};
+
+const questions = [
+    {
+        text: '「好き」な気持ち、どうやって伝えますか？',
+        options: [
+            { text: '「好きです」とはっきり言葉にして伝えたい', scores: { kotoba:3, kuki:0, chowa:0, timing:0 } },
+            { text: '一緒にいる時間を増やして、態度で感じてほしい', scores: { kotoba:0, kuki:3, chowa:0, timing:0 } },
+            { text: '相手の気持ちを確かめてから、タイミングを見て伝えたい', scores: { kotoba:0, kuki:0, chowa:0, timing:3 } },
+        ]
+    },
+    {
+        text: 'デートのプランを決めるとき',
+        options: [
+            { text: '自分がリサーチして「ここどう？」と提案する', scores: { kotoba:3, kuki:0, chowa:0, timing:0 } },
+            { text: '相手の「行きたそうな場所」を読み取って決める', scores: { kotoba:0, kuki:3, chowa:0, timing:0 } },
+            { text: '「どこ行きたい？」と聞いて、一緒に決める', scores: { kotoba:0, kuki:0, chowa:3, timing:0 } },
+        ]
+    },
+    {
+        text: 'パートナーが元気なさそうなとき',
+        options: [
+            { text: '「どうした？話して」とすぐ声をかける', scores: { kotoba:3, kuki:0, chowa:0, timing:0 } },
+            { text: '「大丈夫？」とLINEで優しく聞く', scores: { kotoba:0, kuki:0, chowa:3, timing:0 } },
+            { text: '気が向いたら話してくれるまで、そっと待つ', scores: { kotoba:0, kuki:0, chowa:0, timing:3 } },
+        ]
+    },
+    {
+        text: '意見が食い違ったとき',
+        options: [
+            { text: '「私はこう思う」とはっきり伝えて話し合う', scores: { kotoba:3, kuki:0, chowa:0, timing:0 } },
+            { text: '「そうかもね」といったん相手を受け止める', scores: { kotoba:0, kuki:3, chowa:0, timing:0 } },
+            { text: '「それもありだけど、〜はどう？」と提案する', scores: { kotoba:0, kuki:0, chowa:3, timing:0 } },
+        ]
+    },
+    {
+        text: '言いにくいことを伝えるとき',
+        options: [
+            { text: 'ちゃんと時間をとって、言葉で丁寧に伝える', scores: { kotoba:3, kuki:0, chowa:0, timing:0 } },
+            { text: '空気感や態度で「何か違う」と感じ取ってほしい', scores: { kotoba:0, kuki:3, chowa:0, timing:0 } },
+            { text: 'タイミングが来るまで、じっくり待つ', scores: { kotoba:0, kuki:0, chowa:0, timing:3 } },
+        ]
+    },
+    {
+        text: '記念日や大切な日の過ごし方',
+        options: [
+            { text: '「今日ありがとう」と言葉で気持ちを伝えたい', scores: { kotoba:3, kuki:0, chowa:0, timing:0 } },
+            { text: 'サプライズを用意して、驚かせたい', scores: { kotoba:0, kuki:3, chowa:0, timing:0 } },
+            { text: '相手の希望に合わせて、喜ぶことをしてあげたい', scores: { kotoba:0, kuki:0, chowa:3, timing:0 } },
+        ]
+    },
+    {
+        text: '結婚後のコミュニケーション、どうあってほしい？',
+        options: [
+            { text: '毎日「ありがとう」「好き」を言い合える関係', scores: { kotoba:3, kuki:0, chowa:0, timing:0 } },
+            { text: '言葉がなくても、分かり合える関係', scores: { kotoba:0, kuki:3, chowa:0, timing:0 } },
+            { text: '何でも話し合える、友達のような関係', scores: { kotoba:0, kuki:0, chowa:3, timing:0 } },
+        ]
+    },
+];
+
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbygGQ924XbZUZTuof8ZLSjGtXRuknrkR8JnK9BvVOvIbmu0QWlmOAhyKPJcUhlIq7_l5w/exec';
+
+let currentQ = 0;
+let scores = { kotoba:0, kuki:0, chowa:0, timing:0 };
+let userName = '', userAge = '';
+
+const startView    = document.getElementById('start-view');
+const questionView = document.getElementById('question-view');
+const resultView   = document.getElementById('result-view');
+
+function switchView(v) {
+    [startView, questionView, resultView].forEach(x => x.classList.remove('active'));
+    v.classList.add('active');
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+    const name = document.getElementById('user-name').value.trim();
+    const age  = document.getElementById('user-age').value.trim();
+    let ok = true;
+    if (!name) { document.getElementById('name-error').style.display = 'block'; ok = false; } else { document.getElementById('name-error').style.display = 'none'; }
+    const ageN = parseInt(age);
+    if (!age || isNaN(ageN) || ageN < 18 || ageN > 99) { document.getElementById('age-error').style.display = 'block'; ok = false; } else { document.getElementById('age-error').style.display = 'none'; }
+    if (!ok) return;
+    userName = name; userAge = age;
+    scores = { kotoba:0, kuki:0, chowa:0, timing:0 };
+    currentQ = 0;
+    switchView(questionView);
+    showQ();
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+    scores = { kotoba:0, kuki:0, chowa:0, timing:0 };
+    currentQ = 0;
+    switchView(questionView);
+    showQ();
+});
+
+function showQ() {
+    const q = questions[currentQ];
+    document.getElementById('progress-bar').style.width = `${(currentQ / questions.length) * 100}%`;
+    document.getElementById('question-number').textContent = `質問 ${currentQ + 1} / ${questions.length}`;
+    document.getElementById('question-text').textContent = q.text;
+    const c = document.getElementById('options-container');
+    c.innerHTML = '';
+    q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = opt.text;
+        btn.onclick = () => {
+            for (const k in opt.scores) scores[k] += opt.scores[k];
+            currentQ++;
+            if (currentQ < questions.length) { showQ(); }
+            else { document.getElementById('progress-bar').style.width = '100%'; setTimeout(showResult, 250); }
+        };
+        c.appendChild(btn);
+    });
+}
+
+function showResult() {
+    switchView(resultView);
+    if (typeof confetti === 'function') {
+        const colors = ['#c2185b', '#f48fb1', '#fce4ec', '#ffcd3c', '#ffffff'];
+        confetti({ particleCount: 60, spread: 360, startVelocity: 25, ticks: 60, origin: { x:0.5, y:0.35 }, colors });
+        setTimeout(() => confetti({ particleCount: 100, angle: 60, spread: 80, startVelocity: 45, origin: { x:0.2, y:0.4 }, colors }), 100);
+        setTimeout(() => confetti({ particleCount: 100, angle: 120, spread: 80, startVelocity: 45, origin: { x:0.8, y:0.4 }, colors }), 100);
+    }
+
+    document.getElementById('user-profile-badge').textContent = `${userName} 様 (${userAge}歳) の診断結果`;
+
+    const total = Object.values(scores).reduce((a, b) => a + b, 0) || 1;
+    const pct = {};
+    for (const k in scores) pct[k] = Math.round((scores[k] / total) * 100);
+
+    // 最高タイプを判定
+    const winner = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+    document.getElementById('result-type-label').textContent = TYPES[winner].label;
+    document.getElementById('result-type-sub').textContent = TYPES[winner].sub;
+    document.getElementById('result-text').textContent    = RESULTS[winner].text;
+    document.getElementById('result-partner').textContent = RESULTS[winner].partner;
+    document.getElementById('result-advice').textContent  = RESULTS[winner].advice;
+
+    // バーチャート描画
+    const barC = document.getElementById('bars-container');
+    barC.innerHTML = '';
+    const order = Object.entries(pct).sort((a, b) => b[1] - a[1]);
+    order.forEach(([k, p], i) => {
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+            <div class="bar-name">${TYPES[k].label}</div>
+            <div class="bar-track"><div class="bar-fill ${i > 0 ? 'secondary' : ''}" id="bar-${k}"></div></div>
+            <div class="bar-pct">${p}%</div>`;
+        barC.appendChild(row);
+    });
+    setTimeout(() => {
+        order.forEach(([k, p]) => {
+            const el = document.getElementById(`bar-${k}`);
+            if (el) el.style.width = `${p}%`;
+        });
+    }, 100);
+
+    // GASへ送信
+    try {
+        fetch(GAS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ timestamp: new Date().toLocaleString('ja-JP'), name: userName, age: userAge, result: TYPES[winner].label, shindan: '相性タイプ診断', ...pct }) }).catch(() => {});
+    } catch(e) {}
+}
+</script>
+</body>
+</html>
